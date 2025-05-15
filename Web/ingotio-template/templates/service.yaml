@@ -1,0 +1,25 @@
+{{- if and (hasKey .Values "svc") (.Values.svc.enabled | default false) }}
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    helm.sh/resource-policy: keep
+  name: {{ .Values.deploy.name }}
+spec:
+  selector:
+    app: {{ .Values.deploy.name }}
+  ports:
+{{- if .Values.svc.ports }}
+{{- range .Values.svc.ports }}
+    - name: {{ .name }}
+      protocol: TCP
+      port: {{ .port }}
+      targetPort: {{ .targetPort }}
+{{- end }}
+{{- else }}
+    - protocol: TCP
+      port: {{ .Values.svc.port }}
+      targetPort: {{ .Values.deploy.port }}
+{{- end }}
+
+{{- end }}      

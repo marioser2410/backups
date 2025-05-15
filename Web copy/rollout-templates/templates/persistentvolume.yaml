@@ -1,0 +1,17 @@
+{{- if and (hasKey .Values "pv") (.Values.pv.enabled | default false) }}
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: {{ .Values.deploy.name }}-pv
+  namespace: {{ .Values.deploy.namespace }}
+  labels:
+    type: local
+spec:
+  capacity:
+    storage: 5Gi
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: local-path
+  hostPath:
+    path: "/var/lib/storage/strapi-database-pv"
+{{- end }}

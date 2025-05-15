@@ -1,0 +1,68 @@
+cosmos-common-template:
+  deploy:
+    name: cosmos-metatraderrestgateway
+    namespace: application
+    replicas: 1
+    port: 80
+    targetport: 80
+    image: "cosmos.metatraderrestgateway"
+    registry: "637423636753.dkr.ecr.eu-central-1.amazonaws.com"
+    tag: 1.0.5
+    resources:
+      enabled: true
+      requestCpu: 400m
+      requestMemory: 512Mi
+      limitCpu: 1000m
+      limitMemory: 2Gi
+  nodeselector:
+    enabled: true
+    key: type
+    value: amd64
+  svc:
+    enabled: true
+    name: cosmos-metatraderrestgateway
+    port: 80
+  hpa:
+    autoscaling:
+      enabled: true
+      minReplicas: 1
+      maxReplicas: 3
+      targetCPUUtilizationPercentage: 70
+      targetMemoryUtilizationPercentage: 70
+  probeLiveness:
+    timeoutSeconds: 5
+    failureThreshold: 3
+    successThreshold: 1
+    periodSeconds: 30
+    initialDelaySeconds: 60
+    path: /
+  probeReadiness:
+    timeoutSeconds: 5
+    failureThreshold: 1
+    successThreshold: 1
+    periodSeconds: 10
+    initialDelaySeconds: 60
+    path: /
+  ingress:
+    enabled: true
+    host: mt-gateway-api.ingotbrokers.app
+    issuer: letsencrypt-clusterissuer
+    class: nginx-internal
+  tls:
+    domain: ingotbrokers.app
+    secretName: letsencrypt-cert
+  configmap:
+    enabled: true
+    appsettings: |
+      {
+        "vault": {
+          "enabled": true,
+          "url": "https://vault.ingotbrokers.app",
+          "authType": "userpass",
+          "token": "secret",
+          "username": "appuser",
+          "password": "4NgiNJEaz@Py7JGsvn.b",
+          "key": "prod-mt-gateway-api",
+          "mountPoint": "kv"
+        }
+      }

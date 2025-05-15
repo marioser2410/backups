@@ -1,0 +1,13 @@
+{{- if and (hasKey .Values "redis") (.Values.redis.enabled | default false) }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.deploy.name }}-redis-service
+spec:
+  selector:
+    app: redis
+  ports:
+    - protocol: TCP
+      port: 6379
+      targetPort: 6379
+{{- end }}      

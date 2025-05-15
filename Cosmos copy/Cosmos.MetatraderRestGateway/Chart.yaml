@@ -1,0 +1,8 @@
+name: metatrader-rest-gw-api
+description: metatrader-rest-gw-api-apihelmchart
+apiVersion: v2
+version: 0.1.0
+dependencies:
+  - name: cosmos-common-template
+    version: 0.1.0
+    repository: "file://../common-templates"

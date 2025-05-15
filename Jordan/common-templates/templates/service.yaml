@@ -1,0 +1,16 @@
+{{- if .Values.svc.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.deploy.name }}-service
+  namespace: {{ .Values.deploy.namespace }}
+  annotations:
+    helm.sh/resource-policy: "keep"
+spec:
+  selector:
+    app: {{ .Values.deploy.name }}
+  ports:
+    - protocol: TCP
+      port: {{ .Values.svc.port }}
+      targetPort: {{ .Values.deploy.port }}
+{{- end }}

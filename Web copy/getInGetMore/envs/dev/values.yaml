@@ -1,0 +1,44 @@
+ingotio-template:
+  deploy:
+    name: getingetmore
+    kind: "Deployment"
+    replicas: 2
+    ports:
+      - port: 3000
+    port: 3000  
+    targetport: 3000
+    image: "getingetmore"
+    registry: "637423636753.dkr.ecr.eu-central-1.amazonaws.com"
+    tag: 0.0.1-dev
+  resources:
+    enabled: true
+    requestCpu: 200m
+    requestMemory: 200Mi
+    limitCpu: 200m
+    limitMemory: 200Mi 
+  nodeselector:
+    kubernetes.io/arch: arm64
+    karpenter.sh/capacity-type: spot
+    intent: apps    
+  ingress:
+    enabled: true
+    class: nginx-internal
+    rules:
+      - host: getin-getmore.ingotbrokers.dev
+        path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: getingetmore
+            port:
+              number: 3000
+    tls:
+      domain: ingotbrokers.dev
+      secretName: letsencrypt-cert
+  svc:
+    enabled: true
+    port: 3000        
+  pdb:
+    enabled: true
+    minAvailable: "1"
+    maxUnavailable: ""

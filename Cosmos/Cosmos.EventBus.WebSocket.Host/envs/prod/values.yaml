@@ -1,0 +1,112 @@
+cosmos-common-template:
+  deploy:
+    name: cosmos-notification-websocket
+    namespace: cosmos-notification
+    replicas: 1
+    port: 5000
+    image: "cosmos.notification.websocket"
+    registry: "637423636753.dkr.ecr.eu-central-1.amazonaws.com"
+    tag: 1.0.8
+  resources:
+    enabled: true
+    requestCpu: 100m
+    requestMemory: 512Mi
+    limitCpu: 200m
+    limitMemory: 800Mi
+  nodeselector:
+    kubernetes.io/arch: amd64
+    karpenter.sh/capacity-type: spot
+    intent: apps
+  # tolerations:
+  #   - key: CriticalAddonsOnly
+  #     value: true
+  #     operator: Equal
+  #     effect: NoSchedule
+  # affinity:
+  #   nodeAffinity:
+  #     requiredDuringSchedulingIgnoredDuringExecution:
+  #       nodeSelectorTerms:
+  #       - matchExpressions:
+  #         - key: type
+  #           operator: In
+  #           values:
+  #           - amd64
+    # podAffinity:
+    #   requiredDuringSchedulingIgnoredDuringExecution:
+    #   - labelSelector:
+    #       matchExpressions:
+    #       - key: security
+    #         operator: In
+    #         values:
+    #         - VALUE1
+    #     topologyKey: KEY
+    # podAntiAffinity:
+    #   requiredDuringSchedulingIgnoredDuringExecution:
+    #   - labelSelector:
+    #       matchExpressions:
+    #       - key: security
+    #         operator: In
+    #         values:
+    #         - VALUE2
+    #     topologyKey: KEY  
+  # topologySpreadConstraints:
+  # - maxSkew: 1
+  #   topologyKey: kubernetes.io/hostname
+  #   whenUnsatisfiable: DoNotSchedule
+  #   labelSelector:
+  #     matchLabels:
+  #       app: test-mycrm-audit-host
+  #   matchLabelKeys:
+  #     - ip-10-101-52-36.eu-west-1.compute.internal  
+  svc:
+    enabled: true
+    name: cosmos-notification-websocket
+    port: 80
+  hpa:
+    autoscaling:
+      enabled: false
+      minReplicas: 1
+      maxReplicas: 3
+      targetCPUUtilizationPercentage: 90
+      targetMemoryUtilizationPercentage: 90
+    behavior:
+      enabled: false
+      scaleupValue: 90
+      scaledownValue: 85
+      periodSeconds: 15
+  probe:
+    enabled: false
+  probeLiveness:
+    timeoutSeconds: 15
+    failureThreshold: 3
+    successThreshold: 1
+    periodSeconds: 30
+    initialDelaySeconds: 60
+    path: /
+  probeReadiness:
+    timeoutSeconds: 15
+    failureThreshold: 3
+    successThreshold: 1
+    periodSeconds: 30
+    initialDelaySeconds: 60
+    path: /
+  ingress:
+    enabled: true
+    host: notification-api.ingotbrokers.app
+    class: nginx-internal
+  tls:
+    domain: ingotbrokers.app
+    secretName: letsencrypt-cert
+  configmap:
+    enabled: true
+    appsettings: |
+      {
+        "vault": {
+          "enabled": true,
+          "url": "https://vault.ingotbrokers.app",
+          "authType": "userpass",
+          "token": "secret",
+          "key": "prod-notification-api",
+          "mountPoint": "kv"
+        }
+      }

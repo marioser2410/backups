@@ -1,0 +1,10 @@
+{{- if .Values.configmap.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Values.deploy.name }}-configmap
+  namespace: {{ .Values.deploy.namespace }}
+data:
+  appsettings.json: |-
+{{ .Values.configmap.appsettings | indent 4 }}
+{{- end }}

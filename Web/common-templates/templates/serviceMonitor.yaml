@@ -1,0 +1,22 @@
+{{- if and (hasKey .Values "monitor") (.Values.monitor.enabled | default false) }}
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  labels:
+    release: {{ .Values.monitor.app.release }} 
+  name: {{ .Values.deploy.name }}-monitor
+  namespace: {{ .Values.monitor.namespace }}
+spec:
+  endpoints:
+    {{- range .Values.monitor.endpoints }}
+    - interval: {{ .interval | default "30s" }}
+      path: {{ .path | default "/metrics" }}
+      port: "{{ .port | default "9090" }}"
+    {{- end }}
+  namespaceSelector:
+    matchNames:
+      - {{ .Values.monitor.namespace }}
+  selector:
+    matchLabels:
+      appmetrics: {{ .Values.deploy.name }}
+{{- end }}      

@@ -1,0 +1,40 @@
+{{- if and (hasKey .Values "syncbucket") (.Values.syncbucket.enabled | default false) }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ .Values.deploy.name }}-syncbucket
+  namespace: strapi-prod
+  annotations:
+{{- if and (hasKey .Values "syncWave") (.Values.syncWave.enabled | default false) }}
+    argocd.argoproj.io/sync-wave: "{{ .Values.syncWave.job }}"
+{{- end }}
+
+spec:
+  template:
+    spec:
+      containers:
+      - name: s3-sync
+        image: amazon/aws-cli:latest  # Official AWS CLI image for S3 operations
+        command: ["/bin/sh", "-c"]
+        args:
+          - |
+            echo "Starting S3 sync...";
+            export BUCKET_ORIGIN="{{ .Values.syncbucket.bucketorigin }}";
+            export BUCKET_DESTI="{{ .Values.syncbucket.bucketdesti }}";
+            aws s3 sync "s3://${BUCKET_ORIGIN}/" "s3://${BUCKET_DESTI}/" --acl public-read;
+            echo "S3 sync completed successfully.";
+        env:
+          - name: AWS_ACCESS_KEY_ID
+            valueFrom:
+              secretKeyRef:
+                name: strapi-secrets
+                key: AWS_ACCESS_KEY_ID
+          - name: AWS_SECRET_ACCESS_KEY
+            valueFrom:
+              secretKeyRef:
+                name: strapi-secrets
+                key: AWS_SECRET_ACCESS_KEY
+          - name: AWS_DEFAULT_REGION
+            value: "eu-central-1"
+      restartPolicy: Never
+{{- end }}

@@ -1,0 +1,63 @@
+{{- if and (hasKey .Values "networkpolicy") (.Values.networkpolicy.enabled | default false) }}
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: app-network-policy
+spec:
+  podSelector: {} # Apply this policy to all pods in the namespace
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  {{- if .Values.networkpolicy.podselectoringress }}
+  {{- range .Values.networkpolicy.podselectoringress }}
+  - from:
+    - podSelector:
+        matchLabels:
+          {{ .selector | replace ":" "=" }} # Convert input to matchLabels format
+    ports:
+    - protocol: TCP
+      port: {{ .port }} # Allow traffic on this port
+  {{- end }}
+  {{- end }}
+  {{- if .Values.networkpolicy.namespaceandpodselector }}
+  {{- range .Values.networkpolicy.namespaceandpodselector }}
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          {{ .namespace | replace ":" "=" }} # Convert input to matchLabels format
+      podSelector:
+        matchLabels:
+          {{ .selector | replace ":" "=" }} # Convert input to matchLabels format
+    ports:
+    - protocol: TCP
+      port: {{ .port }} # Allow traffic on this port
+  {{- end }}
+  {{- end }}
+  egress:
+  {{- if .Values.networkpolicy.podselectorengress }}
+  {{- range .Values.networkpolicy.podselectorengress }}
+  - to:
+    - podSelector:
+        matchLabels:
+          {{ .selector | replace ":" "=" }} # Convert input to matchLabels format
+    ports:
+    - protocol: TCP
+      port: {{ .port }} # Allow traffic on this port
+  {{- end }}
+  {{- end }}
+  {{- if .Values.networkpolicy.namespaceandpodselectoreggress }}
+  {{- range .Values.networkpolicy.namespaceandpodselectoreggress }}
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          {{ .namespace | replace ":" "=" }} # Convert input to matchLabels format
+      podSelector:
+        matchLabels:
+          {{ .selector | replace ":" "=" }} # Convert input to matchLabels format
+    ports:
+    - protocol: TCP
+      port: {{ .port }} # Allow traffic on this port
+  {{- end }}
+  {{- end }}
+{{- end }}

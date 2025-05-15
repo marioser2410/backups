@@ -1,0 +1,4 @@
+apiVersion: v2
+description: Ingotio helm chart template
+name: ingotio-template
+version: 0.1.0

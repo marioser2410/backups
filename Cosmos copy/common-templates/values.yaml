@@ -1,0 +1,126 @@
+deploy:
+  name: #cosmos-crm-api
+  namespace: #crm
+  replicas: 1
+  port: 5000
+  image: "cosmos"
+  registry: 
+  tag:
+  kind: "Deployment" 
+resources:
+    enabled: true
+    requestCpu: 200m
+    requestMemory: 128Mi
+    limitCpu:
+    limitMemory: 512Mi
+nodeselector: {}
+ # eks.amazonaws.com/capacityType: SPOT
+ # beta.kubernetes.io/arch: amd64  
+tolerations: []
+ #  - key: type
+ #    value: amd_64
+ #    operator: Equal
+ #    effect: NoSchedule  
+affinity: {}
+  # nodeAffinity:
+  #   requiredDuringSchedulingIgnoredDuringExecution:
+  #     nodeSelectorTerms:
+  #     - matchExpressions:
+  #       - key: type
+  #         operator: In
+  #         values:
+  #         - amd64
+  # podAffinity:
+  #   requiredDuringSchedulingIgnoredDuringExecution:
+  #   - labelSelector:
+  #       matchExpressions:
+  #       - key: security
+  #         operator: In
+  #         values:
+  #         - VALUE1
+  #     topologyKey: KEY
+  # podAntiAffinity:
+  #   requiredDuringSchedulingIgnoredDuringExecution:
+  #   - labelSelector:
+  #       matchExpressions:
+  #       - key: security
+  #         operator: In
+  #         values:
+  #         - VALUE2
+  #     topologyKey: KEY  
+topologySpreadConstraints: []
+# - maxSkew: 1
+#   topologyKey: kubernetes.io/region
+#   whenUnsatisfiable: DoNotSchedule
+#   labelSelector:
+#     matchLabels:
+#       app: test-my
+#   matchLabelKeys:
+#     - SPOT
+svc:
+  enabled: false
+  name: default
+  port: 80
+hpa:
+  autoscaling:
+    enabled: false
+    minReplicas: 1
+    maxReplicas: 3
+    targetCPUUtilizationPercentage: 70
+    targetMemoryUtilizationPercentage: 70
+  behavior:
+    enabled: false
+probeLiveness:
+  enabled: false
+  timeoutSeconds: 5
+  failureThreshold: 3
+  successThreshold: 1
+  periodSeconds: 30
+  initialDelaySeconds: 60
+  path: /index.html
+probeReadiness:
+  enabled: false
+  timeoutSeconds: 5
+  failureThreshold: 1
+  successThreshold: 1
+  periodSeconds: 10
+  initialDelaySeconds: 60
+  path: /index.html
+ingress:
+  enabled: false
+  host: test-my.ingotbrokers.dev
+  issuer: letsencrypt-clusterissuer
+  class: nginx-internal
+tls:
+  enabled: true
+  domain: ingotbrokers.dev
+  secretName: letsencrypt-cert
+configmap:
+  enabled: false
+  mountpath: /app/appsettings.json
+  appsettings: |
+    {
+      "vault": {
+        "enabled": true,
+        "url": "https://vault.ingotbrokers.dev",
+        "authType": "userpass",
+        "token": "secret",
+        "key": "dev-tradedata-service",
+        "mountPoint": "kv"
+      }
+    }
+  ## Pod Disruption Budget configuration
+  ## ref: https://kubernetes.io/docs/tasks/run-application/configure-pdb
+  ## @param pdb.enable Enable/disable a Pod Disruption Budget creation
+  ## @param pdb.minAvailable Minimum number/percentage of pods that should remain scheduled
+  ## @param pdb.maxUnavailable Maximum number/percentage of pods that may be made unavailable. Defaults to `1` if both `grafana.pdb.minAvailable` and `grafana.pdb.maxUnavailable` are empty.
+  ##    
+pdb:
+  enabled: false
+  minAvailable: ""
+  maxUnavailable: ""
+sealedsecrets:
+  enabled: false
+strapi:
+  enabled: false  
+  namespace: strapi

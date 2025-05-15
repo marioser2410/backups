@@ -1,0 +1,169 @@
+ingotio-template:
+  deploy:
+    name: strapi-prod
+    kind: "Deployment"
+    replicas: 2
+    ports:
+      - port: 1337
+    port: 1337  
+    targetport: 1337
+    image: "strapi"
+    registry: "637423636753.dkr.ecr.eu-central-1.amazonaws.com"
+    tag: 1.0.155-prod
+  resources:
+    enabled: true
+    requestCpu: 1
+    requestMemory: 2Gi
+    limitCpu: 1
+    limitMemory: 2Gi    
+  nodeselector:
+    kubernetes.io/arch: arm64
+    karpenter.sh/capacity-type: spot
+    intent: apps
+  ingress:
+    enabled: true
+    class: nginx-internal
+    rules:
+      - host: strapi.ingotbrokers.app
+        path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: strapi-prod
+            port:
+              number: 1337
+    tls:
+      domain: ingotbrokers.app
+      secretName: letsencrypt-cert
+  configmap:
+   enabled: true
+   configMapName: strapi-prod
+   data:
+       PROXY: 'true'
+       URL: https://strapi.ingotbrokers.app
+       SMTP_USERNAME: AKIAZI2LI2EIWCI4RYUK
+       SMTP_HOST: email-smtp.eu-central-1.amazonaws.com
+       ADMIN_JWT_SECRET: /AOC8H0Ae6y++/kbw9WJMg==
+       API_TOKEN_SALT: mrPAPogNdqWpX5jEn/kcyw==
+       APP_KEYS: >-
+         EgTn0ODkE/plLn9dt7cHaw==,abqxzX5IJPfDiKknd/5OHA==,caFaPAsyKoz/CtJvMcJdkA==,A8LSJTNnzHupv8WS15iz8g==
+       AWS_ACL: public-read
+       AWS_BUCKET_STRAPI: cdn.ingot.link
+       AWS_REGION_STRAPI: eu-central-1
+       AWS_SIGNED_URL_EXPIRES: '900'
+       DATABASE_CLIENT: postgres
+       DATABASE_HOST: strapi-postgres-prod-rds-ec1-01.ctq2m22g2owr.eu-central-1.rds.amazonaws.com
+       DATABASE_NAME: strapiprodv20 # CHANGE DURING NEW DEPLOYMENT 
+       DATABASE_PORT: '5432'
+       DATABASE_SSL: 'true'
+       DATABASE_SSL_REJECT_UNAUTHORIZED: 'false'
+       DATABASE_SSL_SELF: 'false'
+       DATABASE_USERNAME: strapi
+       JWT_SECRET: ktDYBPSD/6oCj3o0jELuaQ==
+       TRANSFER_TOKEN_SALT: Vhl82hqCbyy9OxbF4A0DKA==
+       CDN_URL: https://cdn.ingot.link
+       NODE_ENV: production
+       DATABASE_POOL_MAX: '30'
+       DATABASE_POOL_MIN: '30'
+       CACHE_TIMEOUT: '1000'
+       REDIS_CACHE_EXPIRATION: '72000'
+       REDIS_URL: redis://strapi-prod-redis-service.ingotio.svc.cluster.local:6379
+       ENABLE_CACHE: 'true'  
+  svc:
+    enabled: true
+    port: 1337
+  appsecrets:
+    enabled: true
+    secrets:
+      - name: strapi       
+  sealedsecrets:
+    enabled: true  
+    secrets:
+      - name: strapi
+        data:
+          AWS_ACCESS_KEY_ID: "AgAU3e5n/BycCqEPpzDJtLQx8egRu1q7E/pOtqy2Oxs0JJ51jYohxSZcmIevY5S0mRYk2L+ZL9yuqXI8gFrD5zPuFCXpekRDqOPIBejyBa8nSPUbEitAKS2kfOpxknsj645MWIuDVyKzjQ3obrnPDiNgWAtfL36nG12i9xuF+2S0kYXl55JL2oIiifD9kOF3/1k9FVxGqiNz+0D6Cn0tzVVtm1HyNiUOQSD625DL356AYxsRCS/tyEgw64Gn9Yzn7HJptCUlS1AXOsizVGk3BGRfJ6dqyF2/oVVgcHk9LL5GCN+9g6bQBYcRyZcotanhRnLO6SKbG9ChcyEqIpCmsAxpSHCQD6fb/I4XswCRIpBPwuxhsvZtc5JlOrSTef82uWHYMvaj7fK5q75a+hWifB68vB03zTA8go6uLwf0jiqy9mK5XUmwwnroITzHNMl2tuh6aMturnyzOsRWudYDhpiRH2JyhFCFZZDaTHrz6GSvFsSXLZPlwNiEkdM1M2lCVHNQZAFny8VRUxzT9Xd2zs5iV6AL/iNxPfRRMg8gIBRxmozukDflcsGuezimFheg86ky/ckQcgpCstAZpkjiXh6G1gKWqdmct3GQtm5Mh1o0XgtS5r3AA8/IY+LW1uWxrNVZLNBHZzUi93e+ZFbotkO3HuBVKweo7fy3CZIe2WxjGlTbRWZQMl1WzLGit+3Upy/HB2sQdnpya7lbceyPAvE0hqGS8Q=="
+          AWS_SECRET_ACCESS_KEY: "AgABnrAPqcrOU9WWLXVY6nYTMQQ/NgxSOp6vDRta58/zxgHq4gImDwrtFRcqGz6WZoKM3AMYIsWitfUNElIyP11141mmmIw85XEPFkG89nTCux4yQNW5pEHP2nPYFIhX4yoVABlXVxBEDNWVGHVH+KSyb+q7R0/yEAJdomGYcA9Mk/RHYs9QR8IYoXVUpw7WPybDN2dP/cwFgGbrCQQ8KuBn+jBVU8BMP8Ar1TOmVnADKbmvhfrLVHOqvkoMGO7aptc/HMikq5TTfPwRsn0R4bITUy5RiQCIbTJEUE9zOMhs4DIEsmLEOw0kBriwdHF4Atm6KrjBz+z8Z68jN4FRVKN3ZkLkLyqePkpju6HnCJK47pisAEzW095Lrjr30Aaqv1lJqWuYlPNhDDbkUdHiCWeZAEAz9Xg1Dafden42LrDsY3sRHzbBEwzAVdB5gDWdNFrsBvXKuYiI/3muhHcANGl0pmgn559uCH2VDPFZxejPUe8jlAnhBEHSUP3SEyAfjurujrIjapEwgjhE82jmB3YjFbwT5BcUdSIXQeb/whelgvC/0kTUMdPnUDt4/39XN3U812161cqAzPRS2vuImW/IujqnLy/SvV8weoM2uNo1PIBrpBbLHZiivjUD6E3BiRU+QNxL0A2rXKyn/m4xt2YZu3loTG8jxK/qNhV9/Cw+jZ5B4ZlZQMdrPpzacfqqBRZjelj04tjV9Ze9Vtorj22ktdDIrnTcOprwGfTkokqYcR+pBUpAi1ye"
+          SMTP_PASSWORD: "AgCV0daK9emnFEP4MYZ/0FHcJJNB0P2rYqOC3F6IRxPFa5Rr48Atldm4tF4LdFpBegrITI5PRMMLHlImFIuzs5qSkxYuIe6Nqs1amftBcwd7Yf4nEBoDt1LJb4BPTEcidax7IBxUHzF9MeocNud5joGZ/Ycy6l2IFZv0J1dL5GklC+tmKAAysNfzRRmly4q9qg2hjRjaL2uTEY5hau80HqsEZI6EeNA2vC9SvYaCJpEW57m9I9YgCONPKvmmKIZCDreKaNR8MCFB/KRGbca8GcKF7zH7ujMvKdlQRHHs6AhOUHWZKRPkd0FOQGAEmZ9cGBDu7cHQKm/RqDbxifUxLeCMS+dWyCc/yv9dYaNY70y+NtPOauQYCf88czZ/GRmEOdjIv0bsjE9VcpImJLVxhXEhQP7LrxIG16I7AexkKTS9CL+tYjqVnYbxq3vTeNoOqVgmUbfAa50nbxyuClYKcwEd3skAhQOuW0Jx+XyJad59FOyyVt1fiBZ6AIh4IaI+9AjsqhBBD8B9wixUdTJEbpEYwoW+njBpyG5ReMIUFkE7MEY2PQpSeTbeeF3e7xbyfFDxe+9W03vl3B6Ap9y6DmEd5xhwsyasbwhkgeRXMyp+2cx1JxABpgcfmFwMkxx2kgxEF9J2IeAROQrd2Qcxb4xI9Bl5zcxNfeVJuI/YPq8vpJjT7RRfgnxXZU9WSpj2xg1FaYeNlXXn7yr3x9DtnYn91Rw8KiPkG1OCaUkdpsieOQo5Hql9HjwKfKIghQ=="     
+          DATABASE_PASSWORD: "AgCFd66FesZokWgwoFaEoktDAVXMxCWj4gKylXE0xPJT2j+UktPdX8bhROSa3u6uuBzGqZryujHtDvcfAxwmmHv6sHDxWzOshjf50qbNnekgecEz8w8hjUqwtuxp+NKGwB/iiicgd56tgkLIYH+L3zQ98AFmrIde2rkbTZVbfpQhl2X8P1FelSHy8AlR6/nKkRdmUp2WJRcyEl1L91MtCE3msfCqiiqVxbtm3ZaiJST4DeEtuDS9w5JrIftbN1pOFBUMue7IVEl3g18sHXOIY3WAl+lbo17I6ywrTRPJHjxMt1vnOI0cIRUYKXfE02ogGGQznESnV12lZt+WIlTnIhfEaMDWaDmvgEJj0kdO6dR0QX/QjRxfvmgI5EYwiAl4r0eji/Oiun3erp5+1/oxHtFXULFEOb9jN4ZmfpwEjsCXGYPiNt2b/kH77nS1nFEYmUKYgksE95CJiRrLgCmjYk2x5QbnctqXBDGs/biXLloKm2R/eL5PiUCv2a5kyR09t07oAUtVDehnmiwb+YrTOWfAi0hap6j+BoQ+OcPPmJPtvvcRIhKjsQoTLGzrJ9Zr34lmWK7PJP2sJVv7o7cbgp4j5FlOZoTLcfC3xbdQqhllcXjWty4IDZpwzGKI/KtQ+hZNk4jiOIsgbAG6SlzS97ladbwFUwhfX7bo2duZZhsptNddYLefeEj0jgS4mZQQAfjnPwwEM5VPwc/6BSbt72O2YMNQClAqWM5oE/+R"
+      - name: database
+        data:
+          DATABASE_PASSWORD: "AgCFd66FesZokWgwoFaEoktDAVXMxCWj4gKylXE0xPJT2j+UktPdX8bhROSa3u6uuBzGqZryujHtDvcfAxwmmHv6sHDxWzOshjf50qbNnekgecEz8w8hjUqwtuxp+NKGwB/iiicgd56tgkLIYH+L3zQ98AFmrIde2rkbTZVbfpQhl2X8P1FelSHy8AlR6/nKkRdmUp2WJRcyEl1L91MtCE3msfCqiiqVxbtm3ZaiJST4DeEtuDS9w5JrIftbN1pOFBUMue7IVEl3g18sHXOIY3WAl+lbo17I6ywrTRPJHjxMt1vnOI0cIRUYKXfE02ogGGQznESnV12lZt+WIlTnIhfEaMDWaDmvgEJj0kdO6dR0QX/QjRxfvmgI5EYwiAl4r0eji/Oiun3erp5+1/oxHtFXULFEOb9jN4ZmfpwEjsCXGYPiNt2b/kH77nS1nFEYmUKYgksE95CJiRrLgCmjYk2x5QbnctqXBDGs/biXLloKm2R/eL5PiUCv2a5kyR09t07oAUtVDehnmiwb+YrTOWfAi0hap6j+BoQ+OcPPmJPtvvcRIhKjsQoTLGzrJ9Zr34lmWK7PJP2sJVv7o7cbgp4j5FlOZoTLcfC3xbdQqhllcXjWty4IDZpwzGKI/KtQ+hZNk4jiOIsgbAG6SlzS97ladbwFUwhfX7bo2duZZhsptNddYLefeEj0jgS4mZQQAfjnPwwEM5VPwc/6BSbt72O2YMNQClAqWM5oE/+R"
+          DATABASE_PASSWORDDEV: "AgCCMFOHYXHBxGer2Vg1Sb+RgRAvognOggSnBNqs59jiCg3ouQhMZL4SxeAj1VDxtgAoiFTds+WgxDfd0GsHDr4mGdPtC1kSC5CA2FHGbus26lzmmXqCVaNq6OkJhTMYkTbXAMF+mmxWjrvyAWMMDxSiB48coU2c7UeyKQ2d5QwuA5Ukr8YXj7dTPqjCojl9u6cSJpuYfljj8t5pZpv4jFLtPJxo70mRu3FghBFlnzC0RQgD7BA4jtS+ep1UVWsOtsgMntvsxqxCLtYnG9aay5fQgzoywtx6QKECT58XHiC1zPHyBsie5cncIApgRZ3N2Zhw6PQ/mjsoA9xMcn6dHKbjAPWQPwHr8iA6n5lBy4GTFpRBl8hMi16TbLJqBWY1Rv1HIHnjgCKoIG2mFGVKXXnk6rbGl7aLIxCKtXQW2y6GVPOFiHMBKDiK4wJPHvoOzeZ7gHP1mLrSOO1w/JqhefchyfCPfVyncVcBSTH9Wj2UOqkecIKLpUV11N0mCT7GGOPXZ08SIiB1l0gGTVzTlPJymC1Gd/L53/yGyjYxm7eXy79Su755PRFt8+1Wj+0LV+EqxYkTC+WpaLlx8YrEUOhshPglsImjjqRiecCjgTKTygmGK2kOXELdY9s5+imlPWUPmlqBx5rkoFbGGZhd4EZuipzpBJW/lL+ufgTSl5m4T/MWUz3keHWnEqQSAcbDKzqXt5e469NnKgkhQ7c="
+      - name: github
+        data:
+          GITSYNC_USERNAME: "AgAlYf/Eca7CWGsvoPLiYsp+BbQXwW2bgqD5W/UdtUvb5wIUWOHBMnUKSe0jXTnYfctUiOTSvy5QbFwsXcOyOUsvX8P6EgpyiXjpPRj5uMljwPfYl9MAbYwyVqmPCHiBF8H+tjMiVbfPkzcphAc4rP0iC2KL8O8Y3E369C4ISmFVoCpTcp+aEESHs1bqxtTwZZ7vUNbpFbktD29m8CjbwoKNOdAefLxCN+1Jv3VJPg5rr8CUfVwkyNHwgfMBxGg8yavFVYTl1CqX/IlNIxbTNEbHyuJrfj5Ws8tFlb8xJpukfBKix8d71MbFmq/JJCxqLWFmWM5NABDwyKVZBTjNWgnQA9enmgkQX+5HkPStE3+Wun+7Pycz4DLALT/evRa/LkG6svYWW4iUJRbxI+KU2NepHqBzPm+l/NCgi6+1YOvgZY6YcwQciNnRkeRu0R1bnSeLgT6Yr2mnNW1zUo5LGVrJ/TDtSIAakSvpZn8HnDmVfUnH0hTB/NSn9mLxVRCYYPT9qZAr23rOQwIyBKs+jUCPZW1IO75dVJ+oEVJt3Frya9UPTJOlkbQcdokJ41wLk6BiJACTQMFlfXGuiVktWaG++8T0Ntlex7Aud5pSggALH9rMdQ3zeccC5uyzsoFvO9s358Q3X4PjDRMgnpxJqp9+yHtkgZvqlVoJb4ZpcFshMYyMKpRYYF4GWjQmrP74gQ9wJd45JohAM41Zl28="     
+          GITSYNC_PASSWORD: "AgBIVKF3CRqdxgy/SRpRM4bjmFk3cBeR3TwS44qbEhdAwnvsbnWr49Opl/z1G0fK5xgA/TTUo4QZGErDUQirgmc8QcwoIvas3BfW3jl0Z2x0tcMhY8uyyVuxKhEVFQyuV99Jw5AKZgoB9YJliL2AdWiqNJkV3fuT46s0D2Xn/Xzct8sMGJl7BU0BLGTOdT5Y5nubTpoSd1KUX69ApA0i3VMN+v3py0uUdLlwA9P7kxyDmba7nHb315RxZdEoK0Ysd0YDDcxaMbGWy6p7dWzKZNd4A2pc7lG/Fbp/dhyzDg/UaK0+QmYlvdvprbYRTOR23RBN5JwTEB/p2TitvQF43SrKaicUUFrP6zfGqpFoJh6QD12cPMiwv+9JN0WReQ7ySXBGWoUot5Xx/fdnQTMIiWluKPUzTk5wYa7QghiP9z4TAP72iD26NhYFkqyHfEpmcnNiE4m0R1GwFe11S+DPQovNGSNJgF683q+Bbx2IvuO8PaOXUthAKIkphGaofeec4U4NruYb5kfPfczI3l5B9skcVjaXNI4w0gTWvYUOXWyDC6mZZRq5GA2TWTdJWy7PibX0V79TgzUec/mRnVvj282hqN4gj0GkIT8ZcBqJen9wGlFqc6kNDJt9n+bW86uUmdQHKLfKZU4oG7tjpEtzM609/TtMNM0A68QVYHGy3Pf49neAe7davcFEJC8r07yme0ybss6LtVswSE/UtkX7HT0MZXeO/U0r4mBz0UpGg56Z57mO9FJKUOHA"     
+  backup:
+    enabled: true
+    schedule: "0 2 * * *"  # Runs daily at 2 AM UTC
+    dbUser: strapi
+    dbHost: strapi-postgres-prod-rds-ec1-01.ctq2m22g2owr.eu-central-1.rds.amazonaws.com
+    dbName: strapiprodv20 # CHANGE DURING NEW DEPLOYMENT
+    folder: strapi-prod
+    secretName: database
+    awsRegion: eu-central-1
+    s3Bucket: ingot-tech-backup
+  productionreplication:
+    enabled: true
+    backupSection:
+      OriginDbUser: strapi
+      OriginDbHost: strapi-postgres-prod-rds-ec1-01.ctq2m22g2owr.eu-central-1.rds.amazonaws.com
+      OriginDbName: strapipreview16  # CHANGE DURING NEW DEPLOYMENT
+    restoreSection:
+      DestiUser: strapi
+      DestiHost: strapi-postgres-prod-rds-ec1-01.ctq2m22g2owr.eu-central-1.rds.amazonaws.com
+      NewDbName: strapiprodv20 # CHANGE DURING NEW DEPLOYMENT
+      s3BucketToUse: 'https://cdn.ingot.link/'
+    backupTempPath: "/backups/strapi_backup.tar"            
+  syncbucket:
+    enabled: true
+    bucketorigin: cdn-preview.ingot.link
+    bucketdesti: cdn.ingot.link
+    bucketregion: eu-central-1
+  pdb:
+    enabled: true
+    minAvailable: "2"
+    maxUnavailable: ""   
+  redis:
+    enabled: true  
+  syncWave:
+    enabled: true
+    configmap: 0
+    deployment: 2
+    redis: 3
+    job: 1
+  networkpolicy:
+    enabled: false
+    podselectoringress:
+      - selector: 'app=redis'
+        port: 6379
+ #   podselectorengress:
+ #     - selector: 'app=strapi'
+ #       port: 6379
+    namespaceandpodselector:
+      - namespace: 'back=strapi-prod'
+        selector: 'app=strapi'
+        port: 1337
+  ##  namespaceandpodselectoreggress:
+  ##    - namespace: 'front=ingotio'
+  ##      selector: 'app=ingotio'
+  ##      port: 3000
+    cidr:
+      ipblockingress:
+        - cidr: 10.100.31.93
+          port: 5432
+        - cidr: example.rds2
+          port: 3306
+        - cidr: bucketrange?
+          port: 1234    
+    ##  ipblockengress:
+    ##    - cidr: example.rds
+    ##      port: 5432
+    ##    - cidr: example.rds2
+    ##      port: 3306
+    ##    - cidr: bucketrange?
+    ##      port: 1234    
+
+
+
+    

@@ -1,0 +1,85 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.deploy.name }}-deployment
+  namespace: {{ .Values.deploy.namespace }}
+  labels:
+    app: {{ .Values.deploy.name }}
+spec:
+  replicas: {{ .Values.deploy.replicas }}
+  selector:
+    matchLabels:
+      app: {{ .Values.deploy.name }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.deploy.name }}
+    spec:
+{{- if .Values.tolerations.enabled }}
+      tolerations:
+        - key: {{ .Values.tolerations.key }}
+          operator: {{ .Values.tolerations.operator }} 
+          value: {{ .Values.tolerations.value }} 
+          effect: {{ .Values.tolerations.effect }}      
+{{- end }}       
+{{- if .Values.nodeselector.enabled }}
+      nodeSelector:
+        {{ .Values.nodeselector.key }}: {{ .Values.nodeselector.value }}
+{{- end }}
+      containers:
+      - name: {{ .Values.deploy.name }}
+        image: "{{ .Values.deploy.registry }}/{{ .Values.deploy.image }}:{{ .Values.deploy.tag }}"
+        imagePullPolicy: IfNotPresent
+{{- if .Values.configmap.enabled }}
+        volumeMounts:
+          - name: {{ .Values.deploy.name }}-volume
+            mountPath: /app/appsettings.json
+            subPath: appsettings.json
+        env:
+        - name: VAULT_PASSWORD
+          valueFrom:
+           secretKeyRef:
+            name: app-secrets   
+            key: vault_password
+        - name: VAULT_USERNAME
+          valueFrom:
+           secretKeyRef:
+            name: app-secrets   
+            key: vault_username
+        - name: VAULT_ENABLED
+          value: "true"   
+{{- end }}
+{{- if .Values.resources.enabled }}
+        resources:
+          requests:
+            cpu: {{ .Values.resources.requestCpu }}
+            memory: {{ .Values.resources.requestMemory }}
+          limits:
+            cpu: {{ .Values.resources.limitCpu }}
+            memory: {{ .Values.resources.limitMemory }}
+{{- end }}
+{{- if .Values.probe.enabled }}
+        readinessProbe:
+          httpGet:
+            path: {{ .Values.probeReadiness.path }}
+            port: {{ .Values.deploy.port }}  
+          initialDelaySeconds: {{ .Values.probeReadiness.initialDelaySeconds }}
+          timeoutSeconds: {{ .Values.probeReadiness.timeoutSeconds }}
+        livenessProbe:
+          httpGet:
+            path: {{ .Values.probeLiveness.path }}
+            port: {{ .Values.deploy.port }} 
+          failureThreshold: {{ .Values.probeLiveness.failureThreshold }}
+          periodSeconds: {{ .Values.probeLiveness.periodSeconds }}
+          initialDelaySeconds: {{ .Values.probeLiveness.initialDelaySeconds }}
+          timeoutSeconds: {{ .Values.probeLiveness.timeoutSeconds }}
+{{- end }}
+        ports:
+        - containerPort: {{ .Values.deploy.port }} 
+      restartPolicy: Always
+      volumes:
+{{- if .Values.configmap.enabled }}
+        - name: {{ .Values.deploy.name }}-volume
+          configMap:
+            name: {{ .Values.deploy.name }}-configmap
+{{- end }}

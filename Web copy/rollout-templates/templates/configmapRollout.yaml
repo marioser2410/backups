@@ -1,0 +1,11 @@
+{{- if and (hasKey .Values "configmaproll") (.Values.configmaproll.enabled | default false) }}
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Values.configmaproll.configMapName }}-{{ .Values.deploy.tag}}
+data:
+{{- range $key, $value := .Values.configmaproll.rollout }}
+  {{ $key }}: {{ $value | quote }}
+{{- end }}
+{{- end }}

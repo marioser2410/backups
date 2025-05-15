@@ -1,0 +1,55 @@
+ingotio-template:
+  deploy:
+    name: ingotio-preview
+    kind: "Deployment"
+    replicas: 1
+    ports:
+      - port: 3000
+    port: 3000  
+    targetport: 3000
+    image: "ingotio-website"
+    registry: "637423636753.dkr.ecr.eu-central-1.amazonaws.com"
+    tag: 0.0.254-prodpreview
+  resources:
+    enabled: true
+    requestCpu: 400m
+    requestMemory: 600Mi
+    limitCpu: 600m
+    limitMemory: 750Mi 
+  nodeselector:
+    kubernetes.io/arch: arm64
+    karpenter.sh/capacity-type: spot
+    intent: apps
+  ingress:
+    enabled: true
+    class: nginx-external
+    rules:
+      - host: preview.ingot.io
+        path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: ingotio-preview
+            port:
+              number: 3000
+    tls:
+      domain: ingot.io
+      secretName: letsencrypt-cert-ingot-io
+  configmap:
+   enabled: true
+   configMapName: ingotio-preview
+   data:
+       STRAPI_BASE_URL: https://strapi-preview.ingotbrokers.app
+  appsecrets:
+    enabled: true
+    secrets:
+      - name: strapi-token-preview             
+  sealedsecrets:
+    enabled: true  
+    secrets:
+      - name: strapi-token-preview
+        data:
+          STRAPI_TOKEN: "AgAKTz7+XBtC8EYX4L45rMaVjthnZuopuQMxcTpG24Y1BV18alk9KXnnx7Emc+SB0eIy1NdS+J4Q+D7GQ4HAQ3BKZAiU+mfxv5QnblQWK0JmvlJlyhPpYcrDuayRXqlMjQfRVo60Eo/I96+9gCE4vrqvCjCsxt1iJkG5Ah+4gpshJ7r4RLcBM2sxwm4Jlc8YHNbKNGmVx/gXiUw7eUtnAm980QxhTw+TdclaQNoy0rW5rUydMLcSce7SY3M7wv0ljOfBsUnnMWr2IEixWBT2U1aYGZLGwEuh852KD3XyfV3ilBQEJp6FF7Asr/tlSzQLhUywNAJgQolWsu9BGwy8gQ2SgqLk6OtiXXJ6OpYyLw8jP2lEl3An1abRdHsXRx3greH9CRBP6nQ5YtfsMx6jDL7su+KYFa3VQI8cn1pfEsNll9X4YbBhtvemYNS7tM88Omv7smrFzV7gWIhDWQkKwchuA/y1HRgKxmnkJLf8abH/VwQvsbDyHI5/y35Utm4ur4IXfvC66P5iXOKIgghMCuBWylh0MKUcDeNAHRJY8ixfvUoRuZhWfJJJtN2nbJjEAISv1VFQmRo5MQyuoJs9wBhRuGM9XBpBB1Mt1Oei7ciw71NLRRjorj3jf6Upnf4tILLz8mDUw2q25nPW8bqSv2h3OokZDHx42Zikh314q+NdnoF0J3qAdGt0CUPqb3Z9496Jc31hUrH+2LtgPdZ0JQxmSYwUmHRn4nRGJNkJ5MVdd6ze9l/CaoYjbxJiEAH5GD9QYXAPup1cPVA5fz/RES0Yqao+2ZIqTUD92urleB60pq+ONFC51lZRIMNSbN7vpLD7dzy2p7gSNQMvbKr0hDzUt2lxE+4wU2HtH8Uc4pK7xFp58y0CAdAyzU4NP4E4tdgzw23JCc0qqtTlMhLvlq0Qq3Xz/6CVObrHsFqIxOMKLdrMv3MgR6DQisjHVa3O2/njZ3JGMX79BvUQSpCrtcCf+XCBkMHfRmPphOViozTcah5qzSjPmLb2FJuNpe01FQgfZw1KIkUvvKalIEmpTkqz" 
+  svc:
+    enabled: true
+    port: 3000      

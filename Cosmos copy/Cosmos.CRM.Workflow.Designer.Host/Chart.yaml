@@ -1,0 +1,8 @@
+name: crm-workflow-designer-host
+description: crm-workflow-designer-host helmchart
+apiVersion: v2
+version: 0.1.0
+dependencies:
+  - name: cosmos-common-template
+    version: 0.1.0
+    repository: "file://../common-templates"

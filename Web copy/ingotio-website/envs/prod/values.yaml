@@ -1,0 +1,59 @@
+ingotio-template:
+  deploy:
+    name: ingotio
+    kind: "Deployment"
+    replicas: 2
+    ports:
+      - port: 3000
+    port: 3000  
+    targetport: 3000
+    image: "ingotio-website"
+    registry: "637423636753.dkr.ecr.eu-central-1.amazonaws.com"
+    tag: 0.0.254-prod
+  resources:
+    enabled: true
+    requestCpu: 400m
+    requestMemory: 600Mi
+    limitCpu: 600m
+    limitMemory: 750Mi 
+  nodeselector:
+    kubernetes.io/arch: arm64
+    karpenter.sh/capacity-type: spot
+    intent: apps    
+  ingress:
+    enabled: true
+    class: nginx-external
+    rules:
+      - host: www.ingot.io
+        path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: ingotio
+            port:
+              number: 3000
+    tls:
+      domain: ingot.io
+      secretName: letsencrypt-cert-ingot-io
+  configmap:
+   enabled: true
+   configMapName: ingotio
+   data:
+       STRAPI_BASE_URL: https://strapi.ingotbrokers.app
+  appsecrets:
+    enabled: true
+    secrets:
+      - name: frontend          
+  sealedsecrets:
+    enabled: true  
+    secrets:
+      - name: frontend
+        data:
+          STRAPI_TOKEN: "AgA/wsYOwHB7LwWosVWLEZ1Pfcpasl2AuHfvqi/4QSrozHpVHQ6ry+3vnuClt73Vz2mDwfnVtKf6ctTQ/eXG/PUMUhLeTEtEVV5xPgKC89+n4W7y2LFvn2nnBwSPRbASvOBF1saivN4nfShoRgBKVUOIO+HmgU98dlCIEEvqilCZPRsuXlDo0GFhDcdI8X5g1SjxZSmc6I5TYXUCiOA3rv5CMpuoRVoxtILXFR/08MuPPkKUtIKPgNaMWA91kDHQPwQeLJ8zRVcWiiuNud2Q0HN48lhBxdO4W1GJBX+hsfM8ry04K6PGeCFGn1R/MlDU8U0e2hH+CZ2BSqYUwwYRWm8E+ukdB7EKLTVTXTQel52+1sBhhkIXZd4zQMktkPtbEM0cnW/w+NbwyxbDd2Y94WD0yq0Y7MtuVVolvA2moIACYDyzWF8LnoTBPDGL1CYHHwhbe4zSoUD871u7OyxEuhvXjgCTNTh3N23aNQUK2PzVN5uxiYLASKK+f5V1lMU8E93AHyllQ+R+cnRIgWvKrtNT/zHCIt3a2+AHmdWU6szuS6i6qAKm+m4Cxa3oGxNVqUdFTpTQICVLl9ArxQtUPoW0mTYthAPQVX/kWEYoQi/XWrjvOSY7dflbdUt+mzp1uTEzPQFBztUhxNo1JCSKf4TKQLvYalTPgelw5ioBOeLSxgX0ni/j20O3VbS2IkkUiKAAy6IFsvIOjCfbmkhAet/4K9kez2zOk6jcUvp9Wa5+evi91qgcTqkQqnOmc5khpwtjw6rtbiVLiC0yAOPLFk/1JteHlLn5jr2KJru5sfgljxXgBGCK90MN1iQe+8ftPaigyd2cf3NXkLMbqoaILaiA90vXKIxvdJybjDEMoUAYwyoLO+VFfcVuAwYHh/WTpqeuOX4ysWcEPGKU8i1ABNxdv1UCDOZxy/numVp/Fcy4pCBWBqUvOe8g6Y6gh9XiCgNvSlTYKK8xuLK8iIcmJxkjDm0bzv4FCe1N/LCZd1m87TFjAshCoyUP1wVt88VtjtOPlmz2c03GkQEMMseKYDB1" 
+  svc:
+    enabled: true
+    port: 3000        
+  pdb:
+    enabled: true
+    minAvailable: "1"
+    maxUnavailable: ""

@@ -1,0 +1,69 @@
+{{- if and (hasKey .Values "backup") (.Values.backup.enabled | default false) }}
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ .Values.deploy.name }}-backup
+spec:
+  schedule: "{{ .Values.backup.schedule }}"
+  jobTemplate:
+    spec:
+      backoffLimit: 3
+      template:
+        spec:
+          serviceAccountName: {{ .Values.deploy.name }}-backup
+          initContainers:
+            # Backup InitContainer
+            - name: postgres-backup-init
+              image: postgres:16.8
+              imagePullPolicy: Always
+              env:
+                - name: PGPASSWORD
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ .Values.backup.secretName }}
+                      key: DATABASE_PASSWORD
+              command:
+                - "/bin/sh"
+                - "-c"
+                - |
+                  echo "Starting PostgreSQL backup...";
+                  pg_dump --version
+                  echo "pg_dump --version"
+                  pg_dump -h {{ .Values.backup.dbHost }} -d {{ .Values.backup.dbName }} -U {{ .Values.backup.dbUser }} -F t -f /backups/{{ .Values.backup.dbName }}_backup.tar;
+                  if [ $? -eq 0 ]; then
+                    echo "PostgreSQL backup completed successfully.";
+                  else
+                    echo "PostgreSQL backup failed.";
+                    exit 1;
+                  fi;
+              volumeMounts:
+                - mountPath: /backups
+                  name: backup-storage
+              resources:
+                requests:
+                  memory: "500Mi"
+                  cpu: "400m"
+          containers:
+            # AWS CLI container for uploading to S3
+            - name: aws-cli
+              image: amazon/aws-cli:latest
+              imagePullPolicy: Always
+              command:
+                - /bin/sh
+                - -c
+                - |
+                  sleep 10;
+                  aws s3 cp /backups/{{ .Values.backup.dbName }}_backup.tar s3://{{ .Values.backup.s3Bucket }}/{{ .Values.backup.folder }}/{{ .Values.backup.dbName }}_backup_$(date +'%Y-%m-%d').tar --region {{ .Values.backup.awsRegion }};
+              volumeMounts:
+                - mountPath: /backups
+                  name: backup-storage
+              resources:
+                requests:
+                  memory: "300Mi"
+                  cpu: "200m"
+          restartPolicy: OnFailure
+          volumes:
+            - name: backup-storage
+              emptyDir: {}
+
+{{- end }}

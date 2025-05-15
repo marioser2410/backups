@@ -1,0 +1,76 @@
+deploy:
+  name: cosmos-tradedata-service
+  namespace: cosmos-tradedata
+  replicas: 1
+  port: 5000
+  image: "cosmos.tradedata.service"
+  registry: "637423636753.dkr.ecr.eu-central-1.amazonaws.com"
+  tag: 1.0.11
+resources:
+  enabled: true
+  requestCpu: 400m
+  requestMemory: 512Mi
+  limitCpu: 800m
+  limitMemory: 1Gi
+nodeselector:
+  enabled: true
+  key: kubernetes.io/arch
+  value: amd64
+tolerations:
+  enabled: true
+  key: type
+  value: amd_64
+  operator: Equal
+  effect: NoSchedule
+svc:
+  enabled: false
+  name: cosmos-tradedata-service
+  port: 80
+hpa:
+  autoscaling:
+    enabled: false
+    minReplicas: 1
+    maxReplicas: 3
+    targetCPUUtilizationPercentage: 90
+    targetMemoryUtilizationPercentage: 90
+  behavior:
+    enabled: false
+    scaleupValue: 90
+    scaledownValue: 85
+    periodSeconds: 15
+probe:
+  enabled: false
+probeLiveness:
+  timeoutSeconds: 15
+  failureThreshold: 3
+  successThreshold: 1
+  periodSeconds: 30
+  initialDelaySeconds: 60
+  path: /
+probeReadiness:
+  timeoutSeconds: 15
+  failureThreshold: 3
+  successThreshold: 1
+  periodSeconds: 30
+  initialDelaySeconds: 60
+  path: /
+ingress:
+  enabled: false
+  host: 
+  issuer: letsencrypt-clusterissuer
+tls:
+  domain: ingotbrokers.dev
+  secretName: letsencrypt-cert
+configmap:
+  enabled: true
+  appsettings: |
+    {
+      "vault": {
+        "enabled": true,
+        "url": "https://vault.ingotbrokers.dev",
+        "authType": "userpass",
+        "token": "secret",
+        "key": "dev-tradedata-service",
+        "mountPoint": "kv"
+      }
+    }

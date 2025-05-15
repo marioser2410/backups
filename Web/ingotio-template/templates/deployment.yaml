@@ -1,0 +1,112 @@
+{{- if eq .Values.deploy.kind "Deployment" -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.deploy.name }}-deployment
+  labels:
+    app: {{ .Values.deploy.name }}
+  annotations:
+    checksum/config: {{ toYaml .Values.configmap | sha256sum }}
+    checksum/secrets: {{ toYaml .Values.secrets | sha256sum }}
+{{- if and (hasKey .Values "syncWave") (.Values.syncWave.enabled | default false) }}
+    argocd.argoproj.io/sync-wave: "{{ .Values.syncWave.deployment }}"
+{{- end }}
+
+spec:
+  replicas: {{ .Values.deploy.replicas }}
+  revisionHistoryLimit: 3
+  selector:
+    matchLabels:
+      app: {{ .Values.deploy.name }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.deploy.name }}
+    spec:
+{{- if .Values.tolerations }}
+      tolerations:
+{{ toYaml .Values.tolerations | indent 8 }}
+{{- end }}
+{{- if .Values.nodeselector }}
+      nodeSelector:
+{{ toYaml .Values.nodeselector | indent 8 }}
+{{- end }}
+{{- if .Values.affinity }}
+      affinity:
+{{ toYaml .Values.affinity | indent 8 }}
+{{- end }}
+{{- if .Values.topologySpreadConstraints }}
+      topologySpreadConstraints:
+{{ toYaml .Values.topologySpreadConstraints | indent 8 }}
+{{- end }}
+      containers:
+      - name: {{ .Values.deploy.name }}
+        image: "{{ .Values.deploy.registry }}/{{ .Values.deploy.image }}:{{ .Values.deploy.tag }}"
+        imagePullPolicy: IfNotPresent
+        envFrom:
+{{- if and (hasKey .Values "configmap") (.Values.configmap.enabled | default false) }}
+        - configMapRef:
+            name: {{ .Values.configmap.configMapName }}            
+{{- end }}  # Closing configmap block
+{{- if and (hasKey .Values "appsecrets") (.Values.appsecrets.enabled | default false) }}
+{{- range .Values.appsecrets.secrets }}
+        - secretRef:
+            name: {{ .name }}
+{{- end }}                
+{{- end }}
+{{- if .Values.extraEnv }}
+        env:
+{{- range .Values.extraEnv }}
+        - name: {{ .name }}
+          value: {{ .value | quote }}
+{{- end }}
+{{- end }}
+{{- if and (hasKey .Values "resources") (.Values.resources.enabled | default false) }}
+        resources:
+          requests:
+            cpu: {{ .Values.resources.requestCpu }}
+            memory: {{ .Values.resources.requestMemory }}
+          limits:
+            cpu: {{ .Values.resources.limitCpu }}
+            memory: {{ .Values.resources.limitMemory }}
+{{- end }}
+{{- if and (hasKey .Values "probeReadiness") (.Values.probeReadiness.enabled | default false) }}
+        readinessProbe:
+          tcpSocket:
+            port: {{ .Values.deploy.port }}
+          initialDelaySeconds: {{ .Values.probeReadiness.initialDelaySeconds }}
+          timeoutSeconds: {{ .Values.probeReadiness.timeoutSeconds }}
+          periodSeconds: {{ .Values.probeReadiness.periodSeconds }}
+          failureThreshold: {{ .Values.probeReadiness.failureThreshold }}
+{{- end }}
+{{- if and (hasKey .Values "probeLiveness") (.Values.probeLiveness.enabled | default false) }}
+        livenessProbe:
+          tcpSocket:
+            port: {{ .Values.deploy.port }}
+          initialDelaySeconds: {{ .Values.probeLiveness.initialDelaySeconds }}
+          timeoutSeconds: {{ .Values.probeLiveness.timeoutSeconds }}
+          periodSeconds: {{ .Values.probeLiveness.periodSeconds }}
+          failureThreshold: {{ .Values.probeLiveness.failureThreshold }}
+{{- end }}
+        ports:
+{{- range .Values.deploy.ports }}
+        - containerPort: {{ .port }}
+{{- end }}
+{{- if and (hasKey .Values "pvc") (.Values.pvc.enabled | default false) }}
+        volumeMounts:
+        - mountPath: {{ .Values.pvc.mountPath }}
+          name: {{ .Values.deploy.name }}-pvc
+{{- end }}  # Closing pvc block
+      restartPolicy: Always
+      volumes:
+{{- if and (hasKey .Values "configmapVolume") (.Values.configmapVolume.enabled | default false) }}
+        - name: {{ .Values.configmap.configMapName }}-volume
+          configMap:
+            name: {{ .Values.configmap.configMapName }}
+{{- end }}
+{{- if and (hasKey .Values "pvc") (.Values.pvc.enabled | default false) }}
+        - name: {{ .Values.deploy.name }}-pvc
+          persistentVolumeClaim:
+            claimName: {{ .Values.deploy.name }}-pvc
+{{- end }}
+{{- end }}

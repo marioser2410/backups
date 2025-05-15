@@ -1,0 +1,21 @@
+{{- if and (hasKey .Values "roll") (.Values.roll.enabled | default false) }}
+apiVersion: argoproj.io/v1alpha1
+kind: Rollout
+metadata:
+  name: {{ .Values.deploy.name }}-rollout
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: {{ .Values.deploy.name }}
+  workloadRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{ .Values.deploy.name }}-deployment
+    scaleDown: onsuccess
+  strategy:
+    blueGreen:
+      activeService: {{ .Values.deploy.name }}-active
+      previewService: {{ .Values.deploy.name }}-preview
+      autoPromotionEnabled: false
+{{- end }}      

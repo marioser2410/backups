@@ -1,0 +1,13 @@
+{{- if and (hasKey .Values "pvc") (.Values.pvc.enabled | default false) }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ .Values.deploy.name }}-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: {{ .Values.pvc.size | default "20Gi" }}  # Get the size from values.yaml or default to 20Gi
+  storageClassName: {{ .Values.pvc.storageClass | default "gp3" }}  # Use StorageClass from values.yaml, default to "gp3"
+{{- end }}

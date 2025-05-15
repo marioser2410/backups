@@ -1,0 +1,180 @@
+frontend:
+  deploy:
+    name: ingotio-dev-uat2
+    kind: "Deployment"
+    replicas: 2
+    ports:
+      - port: 3000
+    port: 3000
+    targetport: 3000
+    image: "ingotio-website"
+    registry: "637423636753.dkr.ecr.eu-central-1.amazonaws.com"
+    tag: 0.0.261-dev-uat2
+  basicauth:
+    enabled: true
+  resources:
+    enabled: true
+    requestCpu: 200m
+    requestMemory: 400Mi
+    limitMemory: 600Mi
+    limitCpu: 1
+  nodeselector:
+    kubernetes.io/arch: arm64
+    karpenter.sh/capacity-type: spot
+    intent: apps
+  ingress:
+    enabled: true
+    class: nginx-external
+    rules:
+      - host: uat2.ingotbrokers.dev
+        path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: ingotio-dev-uat2
+            port:
+              number: 3000
+    tls:
+      domain: ingotbrokers.dev
+      secretName: letsencrypt-cert
+  configmap:
+    enabled: true
+    configMapName: ingotio-dev-uat2
+    data:
+      STRAPI_BASE_URL: https://uat2-strapi.ingotbrokers.dev
+  appsecrets:
+    enabled: true
+    secrets:
+      - name: frontend-uat2
+      - name: basic-auth
+  sealedsecrets:
+    enabled: true
+    secrets:
+      - name: frontend-uat2
+        data:
+          STRAPI_TOKEN: "AgAaonysMyW8d/Em2/Iu+RDN70Dt33oKrG3qbiqmf2PEpp/UTbyujHvjbR6bv4iDgEm53ihTudRcPuWfxrwUTdxxMjiTPk/aJ1bBdJyRBdc+qyMcOMiUW8XsX/h41vgftvn5Ep9pSIU1WtzN9jV6Eohx6gMwR5YsFD5i5QIleNryL1FxVYlDFvZD1EoDwMFjBzZnCDo2tOs/VTpbdEiU+fAVKm2zwhPvZFzkFlciBLELkecLU5Mo+808fzzspp/o9dB80HbAdAQtd0UsWGzqk/b60UBotkN+o2JSwzvXwtc+7tTLTgEzgtGTuUWJGFP7Mo9GeuwGxnDjsyxNGN5dMXWVm5WrarauRQ41poLIlbWyYIZUF5e6CaRx+Ky8cbJZSCCLcnBYs9+T9WAtcMGCE107tg6Uiig5pK6YxT7wBO899UMxAxAbHcwQ3TJfHXdmDO7kyPhOSjYMdNfLEy9jJ2UNSeJ13GVx/ya7TdUzhzbi4XyQwxnXGuON7P4LvANv3O/A7SF5lXNo0rxSHveW1i/KGdaAxAfIfy4wx3eRs9ZpclCU6a5KPZ/RnGOrHWx8Uo+Txae2qLRzkWIWP3F679DVv7d89PbYD9Eea/isTCO+x8JMuHptpI/h4gt+W17XSFl6z150XixskqHNVE6YlwK1/P4RW1u8xY6UJA0mzuxnSUhWwqILRCJ/pcT/8buFNMSFLxqbiGRBqu5dSMsI1eXae8tsfNqSqRWJ6M96snxDn2+OePPc1xvgRAqmK0a5seAKWLG4SSAzHWXROIo1otNbAWDnmNHCZWFzKLNoFBm7B9A7QwE6vwRzOs4Uy981uSHYwUJBnf80RTgiujHCJIM/WXa+3T+0mIMvoGwgl/qsnxlY41VlnqwrDC4rbZQJEoreVYUxdVbFwWBaRBQAygbWUNL6Xu++FZkoI2G6SkLYgyjjQfXkrlVxg8zpqmDZwQ54fR+iyo2ba6LInpU4AyjE/mLgbDB7SR1B55YDia8On44uYOx290EDb73bsOndivx3G2E9wdCOKaYzbNOUgV/c"
+      - name: basic-auth
+        data:
+          auth: "AgB214ce1Upl2AHRnuX4nYY6W3X9hFgwtyuB9O1bslwxmGd6LybUpWMg+GSV0AuUSpA4uC/MODwWK3ugMzdseZTnwVFrBrp3HPtIgMj47SL0xW57GhsKEcAktoTLaF3Gx7/tSICermDgn4O0EwY7F9mFkVbjIfEr3h9eRM6sVO0ngrUJxIAh3ndKUTYZOMsYdOVF1ysay/rYbNaAt2OfcgD52HAF6PxfztucE0MNV3vgTWpyEDcG8npjM7K57sKrIVg88QB+1Yp8IswlDUYgtQVwoMX/OQOzlOdnsumNq9e3pvIk/CidhCYaViokGQWubTtZwWdB37Rwkrcurp6pYnQlF1m6YekI4J8UI97VJvpi2+PuiDhHJcofV4Y5S8pe5gatLlauoANoRFMlU17+d7OOwiBtE2CcTEKyjFahucH2hQQEMM/ABuvbnfQWTuZrdMDnFHbCkIEm6fZfH2jw/qZMzalTvkh8RTev/sAUmO5acjzbgzGrM2z+N8RZ6CmZ/Fs2KTi3T48qtKV7M+CysNXIX5qJWJ3iSBtPDIOC/1iF2/gwYDq8hO2xE0ABwzXPIMCQ9s9rj+COOpXBl/yul2Cqh/PxrdUe1HUQp5dWJq25/ZPyBWbqLsC9EiKpnSlRca1KzxR+n/e7J9cxSejsLnrDsChzbTNKkLLXg1mlXshxpzD2PdKbEDi8NMyenu7oW/cfAD4U77ozWY+kb40+ro4mGdJISaXDeEwDVmRywp3L0D/gMnMGRfPyjxxPzLM="
+  svc:
+    enabled: true
+    port: 3000
+backend:
+  deploy:
+    name: strapi-uat2
+    kind: "Deployment"
+    replicas: 2
+    ports:
+      - port: 1337
+    port: 1337
+    targetport: 1337
+    image: "strapi"
+    registry: "637423636753.dkr.ecr.eu-central-1.amazonaws.com"
+    tag: 1.0.151-dev-uat2
+  resources:
+    enabled: true
+    requestCpu: 0.5
+    requestMemory: 1Gi
+    limitMemory: 1Gi
+    limitCpu: 1
+  nodeselector:
+    kubernetes.io/arch: arm64
+    karpenter.sh/capacity-type: spot
+    intent: apps
+  ingressext:
+    enabled: false
+    class: nginx-external
+    host: strapiexternal.ingotbrokers.dev
+    rules:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: strapi-uat2
+            port:
+              number: 1337
+    tls:
+      domain: ingotbrokers.dev
+      secretName: letsencrypt-cert
+  ingress:
+    enabled: true
+    class: nginx-internal
+    rules:
+      - host: uat2-strapi.ingotbrokers.dev
+        path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: strapi-uat2
+            port:
+              number: 1337
+    tls:
+      domain: ingotbrokers.dev
+      secretName: letsencrypt-cert
+  configmap:
+    enabled: true
+    configMapName: strapi-uat2
+    data:
+      PROXY: 'true'
+      URL: https://uat2-strapi.ingotbrokers.dev
+      SMTP_USERNAME: AKIAZI2LI2EIWCI4RYUK
+      SMTP_HOST: email-smtp.eu-central-1.amazonaws.com
+      ADMIN_JWT_SECRET: /AOC8H0Ae6y++/kbw9WJMg==
+      API_TOKEN_SALT: mrPAPogNdqWpX5jEn/kcyw==
+      APP_KEYS: >-
+        EgTn0ODkE/plLn9dt7cHaw==,abqxzX5IJPfDiKknd/5OHA==,caFaPAsyKoz/CtJvMcJdkA==,A8LSJTNnzHupv8WS15iz8g==
+      AWS_ACL: public-read
+      AWS_BUCKET_STRAPI: cdn-stg.ingot.link
+      AWS_REGION_STRAPI: eu-west-1
+      AWS_SIGNED_URL_EXPIRES: '900'
+      DATABASE_CLIENT: postgres
+      DATABASE_HOST: postgre-dev-rds-ew1-01.czwe8eg2u3zm.eu-west-1.rds.amazonaws.com
+      DATABASE_NAME: strapicdn-uat2
+      DATABASE_PORT: '5432'
+      DATABASE_SSL: 'true'
+      DATABASE_SSL_REJECT_UNAUTHORIZED: 'false'
+      DATABASE_SSL_SELF: 'false'
+      DATABASE_USERNAME: strapi
+      JWT_SECRET: ktDYBPSD/6oCj3o0jELuaQ==
+      TRANSFER_TOKEN_SALT: Vhl82hqCbyy9OxbF4A0DKA==
+      CDN_URL: https://cdn-stg.ingot.link
+      NODE_ENV: production
+      DATABASE_POOL_MAX: '30'
+      DATABASE_POOL_MIN: '30'
+      CACHE_TIMEOUT2: '1000'
+      REDIS_CACHE_EXPIRATION2: '3600'
+      REDIS_URL2: redis://strapi-redis-service.strapi-uat2.svc.cluster.local:6379
+      ENABLE_CACHE: 'false'
+  svc:
+    enabled: true
+    port: 1337
+  pdb:
+    enabled: true
+  appsecrets:
+    enabled: true
+    secrets:
+      - name: strapi-uat2
+  sealedsecrets:
+    enabled: true
+    secrets:
+      - name: strapi-uat2
+        data:
+          AWS_ACCESS_KEY_ID: "AgB9azNnElqG6stZUJYg/0XeiP5wS17ssfWAwfCJYiknXltQZrcgaZZtdYdAskOkJAB2jLx49AZUraJo0aQNKJ6UgM0WXk7JEQWogVSMhGdD3rhCSb/vKqcpr6SP391hUc23dbAwHLIakR4GMymqKB5xKIoaHPsvN1tVSKnCCiytFntPl4ue2pYqd6ZgXkWFQhRCkqS9qz8P8zeQndyjeQwDiwdgsXHdLvTrSqA8VKHvRcTdOc13PViD/UqAJ8bRK7ZQ2osi1P1N5ArvoDPiYRpKuIrwxzguznb8oStHj81ykwbee7vXJdsF0ruuaGOHtGRE6ggOet8+Nfhed93AOiQXtEBfhSm66lWof6avVTFPGjlWhUKTUWKI2f4g24NLIMmMOPJWU9Qv/9tNME0DvB8WgAYtLbnyHN8SuW14UcHul/MXgNUQ5c5Z11p2oZgHCPuhKKB0N6I77rDyCtRAs/tMPKqO1ZBBVUTJhNWSgIcEvB8wJSVy5vZItl66bxhZNKJY6UrPTH1PKMGtrvWIEox1CePTuIWQhgeWHSVk/YzlkTYINl3eicXe6vSfVLAu0cekGUJ8o5vEX6DOTjqGE4OsPlxbXtq0vo0vfc3+Cgxlt2RNUT+KkdNodSaSSxRMXVA5FVbf27WJgWgxDoWNDnnojNQrwpQb9oz1onPpbA6XIiFChqnkAGNxw4tda2qc96U953LmE3C/bVGE29Bw8q6SXMRDzw=="
+          AWS_SECRET_ACCESS_KEY: "AgAkCtg+pD+0yse1J/0VjOpf2Zr1srsZqZT+1E7sB6CbCFqZC4OP+YHApROKh6GAx8E80hx+xSdio2svL44eQSLQcKiQO7kFlYQ0dnhY1ReXNBHf1aBm7qbN3RRN9JMgICOLgiGdk6wOjAgK66Ro0TUBMDxCPWXkk60zayxjfJ29NsWrRUtJZR0O9hsimOg2PKrmJl/goEx5OOOPIGer2kiS8qpvQb+ro4Ws8aPz0uKkYdvHPELtXhFt+uqfOogGN7Z0EmH49yO18X+/RRlICUT/KMjLWEJAjwpvRZY8iM0RvwkS3AM8SSNaU1SCoNfFGsZZgZwkLeark9zxNfiZBu47SuFBzoZ73lRs47UTpRtuokBwRA5WQPru1ZXYGyk4SbFlKAPFY8t5TifKabxkkXdcCobsZbrdCFhryJBErhu1s4htkC8LrUH1syDbVgDUGwUFt1rLB4YkjirhiZzn4QL8hno1K2R/b0vtisx6r/G8O8Bycx3RB8ya5vIJFDlX0WCScg9R+g+unv3TyEeJDRfNO2UmTIFoXC4fKJngItUYBfML6TQS+QVs83bmJrQjM/EGjVk8RFPK3HXiXoI83pl6Rl+pe/ICbB+MB5EHSiOBT/SqzFc9MFbRVWqeyUg8Ba76MTrC11NlDWVOzyHLdolqP6fIEd43lAWorqcZKHmg9VmmwKB/hLK4djQz4hI8hoA/7/xxRe2tvkbVj7kBtrWlzG4sMGnSCyN15NR8fNfK2uMf7QD/wOZq"
+          SMTP_PASSWORD: "AgAN8h8azOHr9Ub8j0eWnVoVaAW9738hVDfOyT21BvfqQo/MayXBvRZzigrMMl8fzo/CQTCMIzuNXJxc8SSROVINygneGVqgH+gvM/381hzdXlLSdMz0lP1418EXczHbeI3JPHeB94fxGZJqUCQ8K70vRQuNCgygx7FrlBoTkZQQPy2kn4JbcI5y2J32F6gJYKvn/jd/5UW5441Tl/htWYq5M+hqkhoGxFuBeexsKLK2ANo78YLHVFcviY9PkYs7G6rBcHSxYs5vRGWBzu6tzk0S1nvU8l/5Ln2F9EkMYC5goulPdVlBL5W6gIjBo5wg90P2jkZAf1SZT3OQLzb/8jFfNpBHuY5OLz9nzO2Z93fsX+CSwNFFkjOktVDh5ZurPr3X1NaiZcV5mGv0DMl0hVjknVBiKVxgZRiEV2B4DBwQU3DBu6kgbnK+wPQA6Km5cWdXPzEJPny+hux/bkBhm9p91rPMrIOqtB05TB8MnxA66UDcXmYTPzkGfVgUAIckQptfLfAb5P2yVUfjSEsqneLayPqtiFSZKIM8lK8m0yN677J4jPs6RmnySlXf9onSyLVA2b+RvyJalDOy1RnBwybPuXk6y/nd9TMPViJS4RGMlwE+M6t4IDBXmLAXDgOAajR3Xb7QqSkt2oqx3becPTP6GUCfvZ1vRWL+UUk6g9oMJNJiCmGsjrX/xPlW+XoldTcXgEM51DklMawmn+6yVWvF05tQ+etMNgaXz/f7HeHchoAJ2v+6Rceb90m+qA=="
+          DATABASE_PASSWORD: "AgCuKbUvlcWBSfiMOUqFFQzWST2+WuNqNR93zdqYh/TuNraN6CM9erhzAB70xxbgQg/2X3PMg/LsLwMlqJTT/IknMBJx6ecUAaJKg+1dPUcblCcrIkHrkYu59pCfvr0ETN+ULKUpjvCKTEZiwr/EZ7fyGaNveI+DkYZuedNttNMGw0Py1c7gRT+hu29YQQq49tUIUpn7reAPM8qTwN5WNYyY5s8MBNbT+5qt632LDog8YgjH+/9VigSbumr4ipmdovzjPtMEc51kelO7UCsIYRumfIK1BMjiKDMPBiMGfKFodRA9bj5QWLXSW/iFMspbS+hx6L+mscIuV0j09l1XJ2keKjOShHMLcdrjW+vynfSE+QO/ouJKlkd5pZQkXygnm1X/0AAFnX00DQo21zK3NrYTqh3z8qToLpFho7JkXyHX4sQLoOuAVJ0jbSmu0m3aihTDNcmbXONaz3rsbrNjvqdncu3QSymeZn3hW9fSiTQWRfiPZMNvBb7Xr4qinBfpwmRmf8nOuTOGiZtZ6Km2zds8/X4QkZ0DjASF7S0EMknggwRZC2BZss/lCVK/IE4hOhmgdI9YnrcndIdw42aZzBgOZmqHQQp/rl4szyGuFc+r9DiquUDSDPEmnFiCS7eW9XVkbkHCp/4YzjQVbwLqlI8kIpM1C4aGU6rUVhj+Zi6VTfYkgHlkTBdLJ7BzF8ncfU+RqDBKWYmkrv6efXM="
+  backup:
+    enabled: false
+    schedule: "0 2 * * *" # Runs daily at 2 AM UTC
+    dbUser: strapi
+    dbHost: postgre-dev-rds-ew1-01.czwe8eg2u3zm.eu-west-1.rds.amazonaws.com
+    dbName: strapicdn-uat2
+    folder: strapi-uat2
+    secretName: database
+    awsRegion: eu-west-1
+    s3Bucket: ingot-tech-backup
+  syncWave:
+    enabled: false
+    configmap: 0
+    deployment: 2
+    job: 1

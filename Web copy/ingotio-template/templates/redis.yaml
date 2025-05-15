@@ -1,0 +1,34 @@
+{{- if and (hasKey .Values "redis") (.Values.redis.enabled | default false) }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.deploy.name }}-redis-{{ .Values.deploy.tag }}
+  labels:
+    app: redis
+  annotations:
+{{- if and (hasKey .Values "syncWave") (.Values.syncWave.enabled | default false) }}
+    argocd.argoproj.io/sync-wave: "{{ .Values.syncWave.redis }}"
+{{- end }}    
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: redis
+  template:
+    metadata:
+      labels:
+        app: redis
+    spec:
+      containers:
+      - name: redis
+        image: redis:7.0 # Use a stable Redis version
+        ports:
+        - containerPort: 6379
+        resources:
+          limits:
+            cpu: 800m
+            memory: 1Gi
+          requests:
+            cpu: 800m
+            memory: 1Gi      
+{{- end }}

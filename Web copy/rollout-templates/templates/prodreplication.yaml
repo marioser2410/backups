@@ -1,0 +1,135 @@
+{{- if and (hasKey .Values "productionreplication") (.Values.productionreplication.enabled | default false) }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ .Values.deploy.name }}-replicate
+  namespace: strapi-prod
+  annotations:
+{{- if and (hasKey .Values "syncWave") (.Values.syncWave.enabled | default false) }}
+    argocd.argoproj.io/sync-wave: "{{ .Values.syncWave.job }}"
+{{- end }}
+
+spec:
+  template:
+    spec:
+      securityContext:
+        runAsUser: 1001  # Match container user
+        fsGroup: 1001    # Required for file permissions
+      nodeSelector:
+{{ toYaml .Values.nodeselector | indent 8 }}  
+      volumes:
+      - name: backup-storage
+        emptyDir: {}
+      - name: git-scripts
+        emptyDir: {}
+
+      containers:
+      # Git-sync container for fetching scripts
+      - name: git-sync
+        image: registry.k8s.io/git-sync/git-sync:v4.1.0
+        args:
+        - "--repo=https://github.com/IngotTech/devops-scripts"
+        - "--ref=develop"
+        - "--root=/git-scripts"
+        - "--link=current"
+        - "--depth=1"
+        - "--one-time"
+        env:
+        - name: GITSYNC_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: git-credentials  # Secret containing Git username/password
+              key: GITSYNC_USERNAME
+        - name: GITSYNC_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: git-credentials  # Secret containing Git username/password
+              key: GITSYNC_PASSWORD
+        volumeMounts:
+        - name: git-scripts
+          mountPath: /git-scripts
+
+      # Backup container (with added echo statements)
+      - name: postgres-backup
+        image: postgres:16.8
+        env:
+          - name: DB_USER
+            value: "{{ .Values.productionreplication.backupSection.OriginDbUser }}"
+          - name: DB_HOST
+            value: "{{ .Values.productionreplication.backupSection.OriginDbHost }}"   
+          - name: BK_PATH
+            value: "{{ .Values.productionreplication.backupTempPath }}"
+          - name: DB_NAME
+            value: "{{ .Values.productionreplication.backupSection.OriginDbName }}"                                         
+          - name: PGPASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: db-pass
+                key: DATABASE_PASSWORD{{ if contains "preview" .Values.deploy.name }}DEV{{ end }}
+            
+        command: ["/bin/sh", "-c"]
+        args:
+          - |
+            echo "=== Starting PostgreSQL Backup Job ===";
+            echo "Connecting to database at host "{{ .Values.productionreplication.dbHost }}" ...";
+
+            export PGPASSWORD=$PGPASSWORD;
+            pg_dump -h $DB_HOST \
+                    -U $DB_USER \
+                    -d $DB_NAME \
+                    -F t \
+                    -f $BK_PATH;
+
+            if [ $? -eq 0 ]; then
+              echo "=== PostgreSQL Backup Completed Successfully ===";
+              ls -lh $BK_PATH;
+            else
+              echo "=== PostgreSQL Backup Failed ===";
+              exit 1;
+            fi;
+        volumeMounts:
+          - mountPath: /backups
+            name: backup-storage
+
+      # Restore container (unchanged from previous example)
+      - name: postgres-restore
+        image: "{{ .Values.deploy.registry }}/{{ .Values.deploy.image }}:{{ .Values.deploy.tag }}"
+        env:
+          - name: NEW_DB  # Correct variable for database name
+            value: "{{ .Values.productionreplication.restoreSection.NewDbName }}"
+          - name: DB_USER
+            value: "{{ .Values.productionreplication.restoreSection.DestiUser }}"
+          - name: DB_HOST
+            value: "{{ .Values.productionreplication.restoreSection.DestiHost }}"
+          - name: BK_PATH
+            value: "{{ .Values.productionreplication.backupTempPath }}"            
+          - name: PERM_USER
+            value: "{{ .Values.productionreplication.restoreSection.DestiUser }}"
+          - name: BUCKET_CDN
+            value: "{{ .Values.productionreplication.restoreSection.s3BucketToUse }}"            
+          - name: PGPASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: db-pass
+                key: DATABASE_PASSWORD
+        command: ["/bin/sh", "-c"]
+        args:
+          - |
+            until [ -f /git-scripts/current/rdsrestore.sh ]; do
+              echo "Waiting for restore script...";
+              sleep 1;
+            done;
+            echo "$PGPASSWORD"
+            sleep 60;
+            
+            export PGSSLMODE=require;
+            chmod +x /git-scripts/current/rdsrestore.sh;
+            /git-scripts/current/rdsrestore.sh;
+        volumeMounts:
+          - mountPath: /backups
+            name: backup-storage
+          - mountPath: /git-scripts
+            name: git-scripts
+
+      restartPolicy: Never
+{{- end }}

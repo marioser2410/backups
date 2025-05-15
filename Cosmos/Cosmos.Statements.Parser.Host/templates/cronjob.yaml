@@ -1,0 +1,60 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: mt4-statement-parser-cronjob
+  namespace: data-engineering
+spec:
+  schedule: "{{ .Values.schedule }}" # Run at specified schedule
+  jobTemplate:
+    spec:
+      backoffLimit: {{ .Values.backoffLimit }}
+      activeDeadlineSeconds: {{ .Values.activeDeadlineSeconds }}  # Active deadline seconds
+      template:
+        spec:
+          restartPolicy: Never
+          serviceAccountName: {{ .Values.serviceAccountName }}
+          nodeSelector:
+            {{- range $key, $value := .Values.nodeSelector }}
+            {{ $key }}: {{ $value }}
+            {{- end }}
+          tolerations:
+          {{- range .Values.tolerations }}
+          - key: "{{ .key }}"
+            operator: "{{ .operator }}"
+            value: "{{ .value }}"
+            effect: "{{ .effect }}"
+          {{- end }}
+          containers:
+          - name: statement-parser-mt4
+            image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+            volumeMounts:
+            - name: s3-files
+              mountPath: /app/mt-statements
+            - name: appsettings
+              mountPath: /app/appsettings.json
+              subPath: appsettings.json                
+            env:
+            - name: Statements__DatabaseConfiguration__0__ConnectionString
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.databaseSecret.name }}
+                  key: {{ .Values.databaseSecret.key }}
+          initContainers:      
+          - name: init-s3-download
+            image: {{ .Values.initContainerImage }}
+            command:
+            - "/bin/sh"
+            - "-c"
+            - |
+              PREVIOUS_DATE=$(date -d "yesterday" +"%Y%m%d")
+              echo $PREVIOUS_DATE
+              aws s3 sync s3://mt4-live1-eod-statements/${PREVIOUS_DATE}.daily/ /mt-statements/         
+            volumeMounts:
+            - name: s3-files
+              mountPath: /mt-statements     
+          volumes:
+          - name: s3-files
+            emptyDir: {}
+          - name: appsettings
+            configMap:
+              name: {{ .Values.configMapName }}

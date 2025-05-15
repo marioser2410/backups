@@ -1,0 +1,113 @@
+cosmos-common-template:
+  deploy:
+    name: cosmos-tradedata-api
+    namespace: cosmos-tradedata-test
+    replicas: 1
+    port: 5000
+    image: "cosmos.tradedata.api"
+    registry: "637423636753.dkr.ecr.eu-central-1.amazonaws.com"
+    tag: 1.0.23-test
+  resources:
+    enabled: true
+    requestCpu: 100m
+    requestMemory: 128Mi
+    limitCpu: 200m
+    limitMemory: 256Mi
+  nodeselector:
+    kubernetes.io/arch: amd64
+    karpenter.sh/capacity-type: spot
+    intent: apps
+  # tolerations:
+  #   - key: CriticalAddonsOnly
+  #     value: true
+  #     operator: Equal
+  #     effect: NoSchedule
+  # affinity:
+  #   nodeAffinity:
+  #     requiredDuringSchedulingIgnoredDuringExecution:
+  #       nodeSelectorTerms:
+  #       - matchExpressions:
+  #         - key: type
+  #           operator: In
+  #           values:
+  #           - amd64
+    # podAffinity:
+    #   requiredDuringSchedulingIgnoredDuringExecution:
+    #   - labelSelector:
+    #       matchExpressions:
+    #       - key: security
+    #         operator: In
+    #         values:
+    #         - VALUE1
+    #     topologyKey: KEY
+    # podAntiAffinity:
+    #   requiredDuringSchedulingIgnoredDuringExecution:
+    #   - labelSelector:
+    #       matchExpressions:
+    #       - key: security
+    #         operator: In
+    #         values:
+    #         - VALUE2
+    #     topologyKey: KEY  
+  # topologySpreadConstraints:
+  # - maxSkew: 1
+  #   topologyKey: kubernetes.io/hostname
+  #   whenUnsatisfiable: DoNotSchedule
+  #   labelSelector:
+  #     matchLabels:
+  #       app: test-mycrm-audit-host
+  #   matchLabelKeys:
+  #     - ip-10-101-52-36.eu-west-1.compute.internal     
+  svc:
+    enabled: true
+    name: cosmos-tradedata-api
+    port: 80
+  hpa:
+    autoscaling:
+      enabled: false
+      minReplicas: 1
+      maxReplicas: 3
+      targetCPUUtilizationPercentage: 90
+      targetMemoryUtilizationPercentage: 90
+    behavior:
+      enabled: false
+      scaleupValue: 90
+      scaledownValue: 85
+      periodSeconds: 15
+  probeLiveness:
+    enabled: false
+    timeoutSeconds: 15
+    failureThreshold: 3
+    successThreshold: 1
+    periodSeconds: 30
+    initialDelaySeconds: 60
+    path: /
+  probeReadiness:
+    enabled: false
+    timeoutSeconds: 15
+    failureThreshold: 3
+    successThreshold: 1
+    periodSeconds: 30
+    initialDelaySeconds: 60
+    path: /
+  ingress:
+    enabled: true
+    host: tradedata-test-api.ingotbrokers.dev
+    issuer: letsencrypt-clusterissuer
+    class: nginx-internal
+  tls:
+    domain: ingotbrokers.dev
+    secretName: letsencrypt-cert
+  configmap:
+    enabled: true
+    appsettings: |
+      {
+        "vault": {
+          "enabled": true,
+          "url": "https://vault.ingotbrokers.dev",
+          "authType": "userpass",
+          "token": "secret",
+          "key": "test-tradedata-api",
+          "mountPoint": "kv"
+        }
+      }

@@ -1,0 +1,15 @@
+{{- if and (hasKey .Values "configmap") (.Values.configmap.enabled | default false) }}
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Values.deploy.name }}
+  annotations:
+{{- if and (hasKey .Values "syncWave") (.Values.syncWave.enabled | default false) }}
+    argocd.argoproj.io/sync-wave: "{{ .Values.syncWave.configmap }}"
+{{- end }}
+data:
+{{- range $key, $value := .Values.configmap.data }}
+  {{ $key }}: {{ $value | quote }}
+{{- end }}
+{{- end }}

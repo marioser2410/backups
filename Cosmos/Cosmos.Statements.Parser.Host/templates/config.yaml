@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Values.configMapName }}
+data:
+  appsettings.json: |
+{{ .Values.appsettingsJson | toJson | indent 4 }}

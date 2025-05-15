@@ -1,0 +1,25 @@
+{{- if and (hasKey .Values "svcrollout") (.Values.svcrollout.enabled | default false) }}
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    helm.sh/resource-policy: keep
+  name: {{ .Values.deploy.name }}-active
+spec:
+  selector:
+    app: {{ .Values.deploy.name }}
+  ports:
+{{- if and (hasKey .Values "svcrollout") (.Values.svcrollout.enabled | default false) }}
+{{- range .Values.svcrollout.ports }}
+    - name: {{ .name }}
+      protocol: TCP
+      port: {{ .port }}
+      targetPort: {{ .targetPort }}
+{{- end }}
+{{- else }}
+    - protocol: TCP
+      port: {{ .Values.svcrollout.port }}
+      targetPort: {{ .Values.deploy.port }}
+{{- end }}
+
+{{- end }}      

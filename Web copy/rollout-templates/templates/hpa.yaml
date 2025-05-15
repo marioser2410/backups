@@ -1,0 +1,55 @@
+{{- /* AUTOSCALING SECTION */ -}}
+{{- if and (hasKey .Values "hpa") (hasKey .Values.hpa "autoscaling") (.Values.hpa.autoscaling.enabled | default false) }}
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: {{ .Values.deploy.name }}-hpa
+  namespace: {{ .Values.deploy.namespace }}
+  annotations:
+{{- if and (hasKey .Values "hpa") (.Values.hpa.enabled | default false) }}
+    argocd.argoproj.io/sync-wave: "{{ .Values.syncWave.hpa }}"
+{{- end }}
+
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{ .Values.deploy.name }}-deployment
+  minReplicas: {{ .Values.hpa.autoscaling.minReplicas }}
+  maxReplicas: {{ .Values.hpa.autoscaling.maxReplicas }}
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: {{ .Values.hpa.autoscaling.targetCPUUtilizationPercentage }}
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: {{ .Values.hpa.autoscaling.targetMemoryUtilizationPercentage }}
+{{- end }}
+
+{{- /* BEHAVIOR SECTION */ -}}
+{{- if and (hasKey .Values "hpa") (hasKey .Values.hpa "behavior") (.Values.hpa.behavior.enabled | default false) }}
+  behavior:
+    scaleUp:
+      stabilizationWindowSeconds: 30
+      selectPolicy: Max
+      policies:
+        - type: Pods
+          value: 4
+          periodSeconds: 60
+        - type: Percent
+          value: {{ .Values.hpa.behavior.scaleupValue }}
+          periodSeconds: {{ .Values.hpa.behavior.periodSeconds }}
+    scaleDown:
+      stabilizationWindowSeconds: 30
+      selectPolicy: Max
+      policies:
+        - type: Percent
+          value: {{ .Values.hpa.behavior.scaledownValue }}
+          periodSeconds: {{ .Values.hpa.behavior.periodSeconds }}
+{{- end }}

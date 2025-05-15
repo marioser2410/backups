@@ -1,0 +1,7 @@
+spec:
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: cosmos-test-namepsace
+  source:
+    repoURL: https://github.com/IngotTech/helm-charts.git
+    targetRevision: develop

@@ -1,0 +1,111 @@
+{{- if eq .Values.deploy.kind "Deployment" -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.deploy.name }}-deployment
+  namespace: {{ .Values.deploy.namespace }}
+  labels:
+    app: {{ .Values.deploy.name }}
+spec:
+  replicas: {{ .Values.deploy.replicas }}
+  selector:
+    matchLabels:
+      app: {{ .Values.deploy.name }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.deploy.name }}
+    spec:
+
+{{- if .Values.tolerations }}
+      tolerations:
+{{ toYaml .Values.tolerations | indent 8 }}
+{{- end }}
+
+{{- if .Values.nodeselector }}
+      nodeSelector:
+{{ toYaml .Values.nodeselector | indent 8 }}
+{{- end }}
+
+{{- if .Values.affinity }}
+      affinity:
+{{ toYaml .Values.affinity | indent 8 }}
+{{- end }}
+{{- if .Values.topologySpreadConstraints }}
+      topologySpreadConstraints:
+{{ toYaml .Values.topologySpreadConstraints | indent 8 }}
+{{- end }}
+      containers:
+      - name: {{ .Values.deploy.name }}
+        image: "{{ .Values.deploy.registry }}/{{ .Values.deploy.image }}:{{ .Values.deploy.tag }}"
+        imagePullPolicy: IfNotPresent
+{{- if .Values.configmap.enabled }}
+        volumeMounts:
+          - name: {{ .Values.deploy.name }}-volume
+            mountPath: {{ .Values.configmap.mountpath }}
+            subPath: appsettings.json
+        env:
+        - name: VAULT_PASSWORD
+          valueFrom:
+           secretKeyRef:
+            name: app-secrets   
+            key: vault_password
+        - name: VAULT_USERNAME
+          valueFrom:
+           secretKeyRef:
+            name: app-secrets   
+            key: vault_username
+        - name: VAULT_ENABLED
+          value: "true"
+{{- if .Values.extraEnv }}
+{{- range .Values.extraEnv }}
+        - name: {{ .name }}
+          value: {{ .value | quote }}
+{{- end }}
+{{- end }}
+{{- end }}
+{{- if .Values.resources.enabled }}
+        resources:
+          requests:
+            cpu: {{ .Values.resources.requestCpu }}
+            memory: {{ .Values.resources.requestMemory }}
+          limits:
+          {{- if .Values.resources.limitCpu }}
+            cpu: {{ .Values.resources.limitCpu }}
+          {{- end }}  
+            memory: {{ .Values.resources.limitMemory }}
+{{- end }}
+{{- if .Values.probeReadiness.enabled }}
+        readinessProbe:
+          httpGet:
+            path: {{ .Values.probeReadiness.path }}
+            port: {{ .Values.deploy.port }}  
+          initialDelaySeconds: {{ .Values.probeReadiness.initialDelaySeconds }}
+          timeoutSeconds: {{ .Values.probeReadiness.timeoutSeconds }}
+{{- end }}
+{{- if .Values.probeLiveness.enabled }}          
+        livenessProbe:
+          httpGet:
+            path: {{ .Values.probeLiveness.path }}
+            port: {{ .Values.deploy.port }} 
+          failureThreshold: {{ .Values.probeLiveness.failureThreshold }}
+          periodSeconds: {{ .Values.probeLiveness.periodSeconds }}
+          initialDelaySeconds: {{ .Values.probeLiveness.initialDelaySeconds }}
+          timeoutSeconds: {{ .Values.probeLiveness.timeoutSeconds }}
+{{- end }}
+        ports:
+{{- if .Values.deploy.ports }}
+{{- range .Values.deploy.ports }}
+        - containerPort: {{ .containerPort }}
+{{- end }}
+{{- else }}
+        - containerPort: {{ .Values.deploy.port }}
+{{- end }}
+      restartPolicy: Always
+      volumes:
+{{- if .Values.configmap.enabled }}
+        - name: {{ .Values.deploy.name }}-volume
+          configMap:
+            name: {{ .Values.deploy.name }}-configmap
+{{- end }}
+{{- end }}
